@@ -1,0 +1,1037 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="介護記録支援 志摩会試作型">
+  <title>CAREKARTE連携用 外部介護記録支援システム 志摩会試作型</title>
+  <meta name="description" content="音声入力を日本語介護記録へ変換し、CAREKARTE取込用の中間データをCSV/JSONで出力する志摩会試作型HTMLシステム" />
+  <style>
+    :root{
+      --bg:#f6f8fb;--card:#ffffff;--text:#1d2733;--muted:#65748b;--line:#dce3ec;
+      --main:#0f766e;--main2:#115e59;--soft:#e7f6f4;--warn:#b45309;--warnbg:#fff7ed;
+      --danger:#b91c1c;--dangerbg:#fef2f2;--ok:#15803d;--okbg:#f0fdf4;--blue:#1d4ed8;--bluebg:#eff6ff;
+      --shadow:0 10px 26px rgba(15, 23, 42, .08);--radius:18px;--safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:linear-gradient(180deg,#eef6f6, var(--bg) 260px);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;line-height:1.6;min-height:100vh;}
+    a{color:var(--main2)}
+    .app{max-width:1280px;margin:0 auto;padding:18px 18px calc(18px + var(--safe-bottom))}
+    .hero{background:rgba(255,255,255,.86);backdrop-filter: blur(8px);border:1px solid rgba(255,255,255,.7);box-shadow:var(--shadow);border-radius:26px;padding:24px;margin:8px 0 18px;display:grid;grid-template-columns:1.2fr .8fr;gap:18px;align-items:center}
+    .hero h1{font-size:clamp(24px,4vw,42px);line-height:1.15;margin:0 0 10px;color:#0f3f3b;letter-spacing:-.03em}
+    .hero p{margin:0;color:var(--muted)}
+    .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.badge{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 10px;font-size:13px;color:#334155}
+    .heroPanel{background:var(--soft);border:1px solid #c8e9e5;border-radius:20px;padding:16px}.heroPanel b{display:block;color:#134e4a;margin-bottom:6px}
+    .layout{display:grid;grid-template-columns:250px 1fr;gap:16px;align-items:start}.side{position:sticky;top:12px;background:rgba(255,255,255,.92);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:22px;padding:12px;max-height:calc(100vh - 24px);overflow:auto}
+    .navBtn{width:100%;appearance:none;border:0;background:transparent;color:#334155;text-align:left;padding:10px 12px;border-radius:13px;cursor:pointer;font-weight:650;font-size:14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}.navBtn:hover{background:#f1f5f9}.navBtn.active{background:var(--soft);color:var(--main2)}
+    .section{display:none}.section.active{display:block;animation:fadeIn .25s}@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:16px}.card h2{margin:0 0 12px;font-size:24px;line-height:1.25;color:#123b38}.card h3{margin:18px 0 8px;color:#1f2937;font-size:18px}.card h4{margin:14px 0 8px;color:#334155}
+    .lead{font-size:16px;color:#475569}.muted{color:var(--muted)}.small{font-size:12px}.nowrap{white-space:nowrap}.hidden{display:none!important}
+    .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    label{font-size:13px;font-weight:700;color:#334155;display:block;margin:0 0 6px}input,select,textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 11px;font:inherit;background:#fff;color:var(--text)}textarea{min-height:120px;resize:vertical}input:focus,select:focus,textarea:focus{outline:3px solid rgba(15,118,110,.16);border-color:var(--main)}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.right{justify-content:flex-end}.between{justify-content:space-between}.center{align-items:center}.mt{margin-top:12px}.mb{margin-bottom:12px}
+    .btn{appearance:none;border:0;border-radius:12px;background:var(--main);color:white;padding:10px 13px;font-weight:750;cursor:pointer;display:inline-flex;align-items:center;gap:7px;box-shadow:0 5px 12px rgba(15,118,110,.22);text-decoration:none}.btn:hover{background:var(--main2)}.btn.secondary{background:#334155;box-shadow:none}.btn.ghost{background:#fff;color:#334155;border:1px solid var(--line);box-shadow:none}.btn.danger{background:var(--danger)}.btn.ok{background:var(--ok)}.btn.blue{background:var(--blue)}.btn.small{padding:6px 10px;font-size:13px;border-radius:8px}.btn:disabled{opacity:.48;cursor:not-allowed}
+    .pill{border-radius:999px;padding:4px 9px;font-size:12px;font-weight:750;display:inline-flex;gap:5px;align-items:center}.pill.ok{background:var(--okbg);color:var(--ok);border:1px solid #bbf7d0}.pill.warn{background:var(--warnbg);color:var(--warn);border:1px solid #fed7aa}.pill.danger{background:var(--dangerbg);color:var(--danger);border:1px solid #fecaca}.pill.blue{background:var(--bluebg);color:var(--blue);border:1px solid #bfdbfe}.pill.gray{background:#f8fafc;color:#475569;border:1px solid var(--line)}
+    .notice{border-left:5px solid var(--main);background:var(--soft);padding:12px 14px;border-radius:13px;margin:12px 0}.notice.warn{border-color:var(--warn);background:var(--warnbg)}.notice.danger{border-color:var(--danger);background:var(--dangerbg)}.notice.blue{border-color:var(--blue);background:var(--bluebg)}
+    table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--line);border-radius:15px;overflow:hidden;background:#fff}th,td{border-bottom:1px solid var(--line);padding:9px 10px;vertical-align:top;font-size:13px}th{background:#f8fafc;text-align:left;color:#334155;font-weight:800}tr:last-child td{border-bottom:0}.tableWrap{overflow:auto;border-radius:15px}
+    .recordCard{border:1px solid var(--line);border-radius:16px;padding:12px;background:#fff;margin:8px 0}.recordText{background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:8px}.metric{background:#f8fafc;border:1px solid var(--line);border-radius:15px;padding:14px}.metric b{display:block;font-size:24px;color:#0f3f3b}.settingItem{border:1px solid var(--line);border-radius:14px;padding:10px;background:#fff;margin-bottom:8px}
+    dialog{border:0;border-radius:22px;box-shadow:0 30px 90px rgba(15,23,42,.35);padding:0;max-width:760px;width:calc(100% - 30px)}dialog::backdrop{background:rgba(15,23,42,.45)}.modalHead{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;background:#f8fafc;border-radius:22px 22px 0 0}.modalBody{padding:18px;max-height:75vh;overflow:auto}
+    .toast{position:fixed;right:16px;bottom:16px;background:#0f172a;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);z-index:20;max-width:360px;display:none;font-size:14px}.toast.show{display:block;animation:fade .25s ease}@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .mic-btn{width:100%;padding:20px;font-size:18px;display:flex;justify-content:center;gap:10px;margin:16px 0}.recording{animation:pulse 1.5s infinite;background:var(--danger)!important;color:white!important}@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(185,28,28,.7)}70%{box-shadow:0 0 0 15px rgba(185,28,28,0)}100%{box-shadow:0 0 0 0 rgba(185,28,28,0)}}
+    .mobileBanner{display:none}.desktopBanner{display:block}
+    body[data-device="mobile"] .mobileBanner{display:block}body[data-device="mobile"] .desktopBanner{display:none}body[data-device="pc"] .mobileBanner{display:none}body[data-device="pc"] .desktopBanner{display:block}
+    body[data-device="mobile"] .hero{grid-template-columns:1fr;padding:14px;margin:4px 0 12px;border-radius:20px}body[data-device="mobile"] .hero h1{font-size:24px}body[data-device="mobile"] .app{padding:10px 10px calc(78px + var(--safe-bottom))}body[data-device="mobile"] .layout{grid-template-columns:1fr}body[data-device="mobile"] .side{position:fixed;left:8px;right:8px;bottom:calc(8px + var(--safe-bottom));top:auto;max-height:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;z-index:30;border-radius:18px;padding:8px}body[data-device="mobile"] .navBtn{justify-content:center;text-align:center;font-size:12px;padding:9px 4px;margin:0}body[data-device="mobile"] .navBtn span{display:none}body[data-device="mobile"] .grid2,body[data-device="mobile"] .grid3,body[data-device="mobile"] .grid4{grid-template-columns:1fr}body[data-device="mobile"] .card{padding:14px;border-radius:16px}body[data-device="mobile"] .pcHint{display:none}body[data-device="mobile"] table.mobileStack,body[data-device="mobile"] table.mobileStack thead,body[data-device="mobile"] table.mobileStack tbody,body[data-device="mobile"] table.mobileStack tr,body[data-device="mobile"] table.mobileStack td{display:block;width:100%}body[data-device="mobile"] table.mobileStack thead{display:none}body[data-device="mobile"] table.mobileStack tr{border-bottom:1px solid var(--line);padding:8px}body[data-device="mobile"] table.mobileStack td{border:0;padding:4px 0}body[data-device="mobile"] table.mobileStack td::before{content:attr(data-label);display:block;font-weight:800;color:#64748b;font-size:11px}
+    @media(max-width:900px){.hero{grid-template-columns:1fr}.layout{grid-template-columns:1fr}.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+  </style>
+</head>
+<body data-device="pc">
+<div class="app">
+  <header class="hero">
+    <div>
+      <h1>CAREKARTE連携用<br>外部介護記録支援システム<br><span style="font-size:.62em;color:#0f766e;">志摩会試作型</span></h1>
+      <p>音声入力を日本語介護記録へ変換し、利用者・記録者ID付きの中間データをCSV/JSONで出力する志摩会試作型の単体HTML検証版です。</p>
+      <div class="badges">
+        <span class="badge" id="network-badge">🟢 オンライン</span>
+        <span class="badge" id="device-badge">💻 PC画面</span>
+        <span class="badge">👤 利用者・記録者マスタ</span>
+        <span class="badge">🌍 多言語音声</span>
+        <span class="badge">🔒 安全マスク</span>
+      </div>
+    </div>
+    <div class="heroPanel">
+      <b>画面モード</b>
+      <div class="grid3">
+        <div>
+          <label>表示切替</label>
+          <select id="device-mode" onchange="setDeviceMode(this.value)">
+            <option value="auto">自動判定</option>
+            <option value="mobile">スマホ画面</option>
+            <option value="pc">PC画面</option>
+          </select>
+        </div>
+        <div>
+          <label>翻訳APIエンドポイント</label>
+          <input id="translation-endpoint" placeholder="例：/api/translate-to-ja" oninput="saveState()">
+        </div>
+        <div>
+          <label>音声認識APIエンドポイント</label>
+          <input id="speech-endpoint" placeholder="例：/api/transcribe-to-ja" oninput="saveState()">
+        </div>
+        <div>
+          <label>AI校正APIエンドポイント</label>
+          <input id="proofread-endpoint" placeholder="例：/api/proofread-care-record" oninput="saveState()">
+        </div>
+      </div>
+      <p class="small muted mt mobileBanner">スマホ画面では「現場入力」を優先表示し、下部タブで切り替えます。</p>
+      <p class="small muted mt desktopBanner">PC画面では「承認済み一覧・CSV出力・マスタ設定」を見やすく表示します。</p>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="side">
+      <button class="navBtn active" onclick="switchTab('input')" id="tab-input">📱 <span>現場入力</span></button>
+      <button class="navBtn" onclick="switchTab('dashboard')" id="tab-dashboard">💻 <span>承認一覧</span></button>
+      <button class="navBtn" onclick="switchTab('settings')" id="tab-settings">⚙️ <span>設定</span></button>
+    </aside>
+
+    <div class="content">
+      <section id="sec-input" class="section active">
+        <div class="notice blue mobileBanner">
+          <b>スマホ入力モード</b><br>
+          利用者と記録者を選択してから、音声または手入力で記録を作成してください。
+        </div>
+        <div class="card">
+          <h2>🎙 音声入力とAI多言語変換</h2>
+          <div class="grid3 mb">
+            <div>
+              <label>対象利用者</label>
+              <select id="resident-select" onchange="onResidentChange()"></select>
+            </div>
+            <div>
+              <label>記録者</label>
+              <select id="staff-select" onchange="onStaffChange()"></select>
+            </div>
+            <div>
+              <label>入力言語</label>
+              <select id="staff-lang" onchange="onLanguageChange()"></select>
+            </div>
+          </div>
+
+          <div class="grid3 mb">
+            <div>
+              <label>サービス種別</label>
+              <select id="service-type">
+                <option value="">-- サービス種別を選択 --</option>
+                <optgroup label="居宅サービス">
+                  <option value="訪問介護">訪問介護</option>
+                  <option value="訪問入浴介護">訪問入浴介護</option>
+                  <option value="訪問看護">訪問看護</option>
+                  <option value="訪問リハビリテーション">訪問リハビリテーション</option>
+                  <option value="居宅療養管理指導">居宅療養管理指導</option>
+                  <option value="通所介護">通所介護</option>
+                  <option value="通所リハビリテーション">通所リハビリテーション</option>
+                  <option value="短期入所生活介護">短期入所生活介護</option>
+                  <option value="短期入所療養介護（介護老人保健施設）">短期入所療養介護（介護老人保健施設）</option>
+                  <option value="短期入所療養介護（介護医療院）">短期入所療養介護（介護医療院）</option>
+                  <option value="特定施設入居者生活介護">特定施設入居者生活介護</option>
+                </optgroup>
+                <optgroup label="地域密着型サービス">
+                  <option value="定期巡回・随時対応型訪問介護看護">定期巡回・随時対応型訪問介護看護</option>
+                  <option value="夜間対応型訪問介護">夜間対応型訪問介護</option>
+                  <option value="地域密着型通所介護">地域密着型通所介護</option>
+                  <option value="認知症対応型通所介護">認知症対応型通所介護</option>
+                  <option value="小規模多機能型居宅介護">小規模多機能型居宅介護</option>
+                  <option value="認知症対応型共同生活介護">認知症対応型共同生活介護（グループホーム）</option>
+                  <option value="地域密着型特定施設入居者生活介護">地域密着型特定施設入居者生活介護</option>
+                  <option value="地域密着型介護老人福祉施設入所者生活介護">地域密着型介護老人福祉施設入所者生活介護</option>
+                  <option value="看護小規模多機能型居宅介護">看護小規模多機能型居宅介護（複合型サービス）</option>
+                </optgroup>
+                <optgroup label="居宅介護支援・ケアマネジメント">
+                  <option value="居宅介護支援">居宅介護支援</option>
+                  <option value="介護予防支援">介護予防支援</option>
+                  <option value="介護予防ケアマネジメント">介護予防ケアマネジメント（総合事業）</option>
+                </optgroup>
+                <optgroup label="介護保険施設サービス">
+                  <option value="介護老人福祉施設">介護老人福祉施設（特別養護老人ホーム）</option>
+                  <option value="介護老人保健施設">介護老人保健施設</option>
+                  <option value="介護医療院">介護医療院</option>
+                </optgroup>
+                <optgroup label="介護予防サービス">
+                  <option value="介護予防訪問入浴介護">介護予防訪問入浴介護</option>
+                  <option value="介護予防訪問看護">介護予防訪問看護</option>
+                  <option value="介護予防訪問リハビリテーション">介護予防訪問リハビリテーション</option>
+                  <option value="介護予防居宅療養管理指導">介護予防居宅療養管理指導</option>
+                  <option value="介護予防通所リハビリテーション">介護予防通所リハビリテーション</option>
+                  <option value="介護予防短期入所生活介護">介護予防短期入所生活介護</option>
+                  <option value="介護予防短期入所療養介護（介護老人保健施設）">介護予防短期入所療養介護（介護老人保健施設）</option>
+                  <option value="介護予防短期入所療養介護（介護医療院）">介護予防短期入所療養介護（介護医療院）</option>
+                  <option value="介護予防特定施設入居者生活介護">介護予防特定施設入居者生活介護</option>
+                </optgroup>
+                <optgroup label="地域密着型介護予防サービス">
+                  <option value="介護予防認知症対応型通所介護">介護予防認知症対応型通所介護</option>
+                  <option value="介護予防小規模多機能型居宅介護">介護予防小規模多機能型居宅介護</option>
+                  <option value="介護予防認知症対応型共同生活介護">介護予防認知症対応型共同生活介護</option>
+                </optgroup>
+                <optgroup label="福祉用具・住宅改修">
+                  <option value="福祉用具貸与">福祉用具貸与</option>
+                  <option value="特定福祉用具販売">特定福祉用具販売</option>
+                  <option value="住宅改修">住宅改修</option>
+                  <option value="介護予防福祉用具貸与">介護予防福祉用具貸与</option>
+                  <option value="特定介護予防福祉用具販売">特定介護予防福祉用具販売</option>
+                  <option value="介護予防住宅改修">介護予防住宅改修</option>
+                </optgroup>
+                <optgroup label="介護予防・日常生活支援総合事業">
+                  <option value="訪問型サービス（総合事業）">訪問型サービス（総合事業）</option>
+                  <option value="通所型サービス（総合事業）">通所型サービス（総合事業）</option>
+                  <option value="生活支援サービス（総合事業）">生活支援サービス（総合事業）</option>
+                  <option value="一般介護予防事業">一般介護予防事業</option>
+                </optgroup>
+                <optgroup label="法人内・検証用区分">
+                  <option value="定期訪問（検証用）">定期訪問（検証用）</option>
+                  <option value="随時対応（検証用）">随時対応（検証用）</option>
+                  <option value="随時訪問（検証用）">随時訪問（検証用）</option>
+                  <option value="自費・保険外サービス">自費・保険外サービス</option>
+                  <option value="その他">その他</option>
+                </optgroup>
+              </select>
+              <p class="small muted mt">※厚労省の介護サービス大分類に沿って、居宅・地域密着・施設・予防・総合事業等を選択できます。</p>
+            </div>
+            <div>
+              <label>訪問区分</label>
+              <select id="visit-type">
+                <option value="非該当">非該当</option>
+                <option value="定期訪問">定期訪問</option>
+                <option value="随時対応">随時対応</option>
+                <option value="随時訪問">随時訪問</option>
+                <option value="通い">通い</option>
+                <option value="泊まり">泊まり</option>
+                <option value="訪問">訪問</option>
+              </select>
+            </div>
+            <div>
+              <label>記録日時</label>
+              <input id="record-datetime" type="datetime-local">
+            </div>
+          </div>
+
+          <button id="mic-btn" class="btn secondary mic-btn mt" onclick="toggleMic()">
+            <span>🎤</span> <span id="mic-text">ブラウザ音声入力を開始</span>
+          </button>
+          <div class="row right">
+            <button id="smart-rec-btn" class="btn ghost" onclick="toggleSmartRecording()">📱 スマホ録音で入力</button>
+            <button class="btn ghost" onclick="diagnoseVoiceInput()">🔍 音声入力診断</button>
+          </div>
+          <div class="notice warn small" id="mic-support-notice"></div>
+
+          <label>音声認識結果（原文）</label>
+          <textarea id="source-text" placeholder="英語・ベトナム語等で音声入力した場合、まず原文の文字起こしをここに残します。" style="min-height:80px;"></textarea>
+          <div class="row between mt">
+            <label class="row" style="margin:0;font-weight:700;gap:6px;">
+              <input id="auto-translate-source" type="checkbox" checked style="width:auto;">
+              原文欄の内容を自動で日本語変換後テキストへ反映
+            </label>
+            <button class="btn ghost small" onclick="syncSourceToJapanese(true)">🌐 原文を日本語へ反映</button>
+          </div>
+          <div class="notice blue small mt" id="auto-translate-status">
+            原文欄に入力・音声認識された内容は、入力言語に応じて下の日本語欄へ自動反映します。
+          </div>
+
+          <label>日本語変換後テキスト・手入力テキスト</label>
+          <textarea id="raw-text" placeholder="例：山田さん、朝ごはん全部食べました。お茶150ml。トイレは声かけで行けました。少しふらつきあり。"></textarea>
+          <div class="row right mt">
+            <button class="btn blue" onclick="proofreadJapaneseText()" id="proofread-btn">📝 AIで文章校正</button>
+            <button class="btn ghost" onclick="restoreBeforeProofread()" id="restore-proofread-btn" disabled>↩ 校正前に戻す</button>
+          </div>
+          <div class="notice blue small mt hidden" id="proofread-preview">
+            <b>AI校正結果</b><br>
+            <span id="proofread-summary"></span>
+          </div>
+
+          <div class="notice blue small mt" id="masking-notice" style="display:none;">
+            🔒 <b>プライバシー保護処理:</b> 外部翻訳サービス等へ送信する場合、選択した利用者名は「利用者A」に匿名化して処理します。
+          </div>
+
+          <div class="row between mt">
+            <button class="btn ghost" onclick="openQuickAddDialog()">＋ 利用者・記録者を追加</button>
+            <button class="btn ok" onclick="processAI()" id="ai-submit-btn">✨ AIで構造化・翻訳する</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-dashboard" class="section">
+        <div class="notice blue desktopBanner">
+          <b>PC管理モード</b><br>
+          承認済み記録の確認、コピー、CSV/JSON出力を行います。スマホ画面では簡易表示になります。
+        </div>
+        <div class="grid4 mb">
+          <div class="metric"><span class="small muted">承認済み記録</span><b id="metric-records">0</b></div>
+          <div class="metric"><span class="small muted">利用者マスタ</span><b id="metric-residents">0</b></div>
+          <div class="metric"><span class="small muted">職員マスタ</span><b id="metric-staff">0</b></div>
+          <div class="metric"><span class="small muted">未出力記録</span><b id="metric-pending-export">0</b></div>
+        </div>
+        <div class="card">
+          <div class="row between mb">
+            <h2>💻 承認済みデータ</h2>
+            <div class="row">
+              <button class="btn ghost" onclick="exportCSV()">⬇️ CSV出力</button>
+              <button class="btn ghost" onclick="exportJSON()">⬇️ JSON出力</button>
+              <button class="btn danger" onclick="clearData()">🗑 全データ消去</button>
+            </div>
+          </div>
+          <p class="small muted">利用者ID・記録者ID・事業所IDを出力項目に含めています。CAREKARTE正式仕様が確定したら、この中間データのマッピングを変更します。</p>
+          <div class="tableWrap mt">
+            <table id="data-table" class="mobileStack">
+              <thead><tr><th>記録日時</th><th>利用者</th><th>記録者</th><th>サービス</th><th>分類</th><th>値</th><th>記録本文</th><th>操作</th></tr></thead>
+              <tbody id="data-tbody"><tr><td colspan="8" style="text-align:center;padding:20px;">承認されたデータはありません</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-settings" class="section">
+        <div class="card">
+          <h2>⚙️ 利用者・記録者マスタ設定</h2>
+          <p class="small muted">ここで設定した利用者・記録者が現場入力画面の選択肢に反映され、承認記録とCSV/JSONにID付きで保存されます。</p>
+          <div class="grid2 mt">
+            <div>
+              <h3>利用者マスタ</h3>
+              <div class="grid2">
+                <div><label>利用者ID</label><input id="new-resident-id" placeholder="例：R001"></div>
+                <div><label>利用者名</label><input id="new-resident-name" placeholder="例：山田 太郎"></div>
+              </div>
+              <div class="grid2 mt">
+                <div><label>CAREKARTE利用者コード</label><input id="new-resident-carekarte" placeholder="未確認なら空欄可"></div>
+                <div><label>表示メモ</label><input id="new-resident-note" placeholder="例：定期巡回／要介護3"></div>
+              </div>
+              <div class="row right mt"><button class="btn" onclick="addResident()">＋ 利用者を追加</button></div>
+              <div id="resident-list" class="mt"></div>
+            </div>
+            <div>
+              <h3>記録者マスタ</h3>
+              <div class="grid2">
+                <div><label>職員ID</label><input id="new-staff-id" placeholder="例：S001"></div>
+                <div><label>職員名</label><input id="new-staff-name" placeholder="例：田中 花子"></div>
+              </div>
+              <div class="grid2 mt">
+                <div><label>CAREKARTE職員コード</label><input id="new-staff-carekarte" placeholder="未確認なら空欄可"></div>
+                <div><label>主な入力言語</label><select id="new-staff-lang"></select></div>
+              </div>
+              <div class="row right mt"><button class="btn" onclick="addStaff()">＋ 記録者を追加</button></div>
+              <div id="staff-list" class="mt"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>🔧 設定データの入出力</h2>
+          <p class="small muted">単体HTML版では、マスタと承認データをブラウザ内のlocalStorageに保存します。別端末へ移す場合はJSONで出力・取込してください。</p>
+          <div class="row">
+            <button class="btn ghost" onclick="exportSettings()">⬇️ 設定JSON出力</button>
+            <label class="btn ghost" style="margin:0;cursor:pointer;">⬆️ 設定JSON取込<input id="settings-file" type="file" accept="application/json" class="hidden" onchange="importSettings(event)"></label>
+            <button class="btn danger" onclick="resetMasterData()">初期マスタへ戻す</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<dialog id="ai-modal">
+  <div class="modalHead">
+    <h3 style="margin:0;">✅ 記録の確認と承認</h3>
+    <button class="btn ghost" style="padding:4px 10px;" onclick="document.getElementById('ai-modal').close()">✕</button>
+  </div>
+  <div class="modalBody">
+    <p class="small muted">AIが作成した日本語記録です。間違いがないか確認し、必要に応じて修正してから承認してください。</p>
+    <div class="notice blue">
+      <b>[🌐 <span id="lang-label"></span> で内容を確認]</b><br>
+      <p class="small muted mb">バックグラウンド翻訳APIが未設定の場合は、匿名化した文章でGoogle翻訳画面を開きます。</p>
+      <div class="row">
+        <button id="background-translate-btn" class="btn blue small" style="box-shadow:none;" onclick="translateSummaryInBackground()">🌍 バックグラウンド翻訳</button>
+        <button id="google-translate-intent-btn" class="btn ghost small" style="box-shadow:none;">Google翻訳を開く</button>
+      </div>
+      <div id="translated-preview" class="recordText small mt hidden"></div>
+    </div>
+    <div id="ai-structured-results" class="mt mb"></div>
+    <div class="row right mt">
+      <button class="btn ghost" onclick="document.getElementById('ai-modal').close()">やり直す</button>
+      <button class="btn ok" onclick="approveRecords()">✅ 承認して保存</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="quick-add-modal">
+  <div class="modalHead">
+    <h3 style="margin:0;">＋ 簡易追加</h3>
+    <button class="btn ghost" style="padding:4px 10px;" onclick="document.getElementById('quick-add-modal').close()">✕</button>
+  </div>
+  <div class="modalBody">
+    <p class="small muted">現場入力中に最低限の利用者・記録者だけ追加できます。詳細設定は「設定」画面で修正してください。</p>
+    <div class="grid2">
+      <div>
+        <h4>利用者追加</h4>
+        <label>利用者ID</label><input id="quick-resident-id" placeholder="例：R004">
+        <label class="mt">利用者名</label><input id="quick-resident-name" placeholder="例：佐藤 一郎">
+        <button class="btn mt" onclick="addResident(true)">＋ 追加</button>
+      </div>
+      <div>
+        <h4>記録者追加</h4>
+        <label>職員ID</label><input id="quick-staff-id" placeholder="例：S004">
+        <label class="mt">職員名</label><input id="quick-staff-name" placeholder="例：鈴木 花子">
+        <button class="btn mt" onclick="addStaff(true)">＋ 追加</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  let isRecording=false;
+  let recognition=null;
+  let mediaRecorder=null;
+  let audioChunks=[];
+  let isSmartRecording=false;
+  let pendingRecords=[];
+  let approvedDb=[];
+  let residents=[];
+  let staffMembers=[];
+  let deviceMode='auto';
+  let pendingSummaryMasked='';
+  let pendingTargetLanguage='ja';
+  let autoTranslateTimer=null;
+  let lastAutoTranslatedSource='';
+  let autoTranslateInProgress=false;
+  let lastProofreadOriginal='';
+
+  const STORAGE_KEY='carekarte_voice_system_v3';
+  const LANGUAGES={
+    ja:{label:'日本語',speech:'ja-JP',translate:'ja'},
+    en:{label:'英語 (English)',speech:'en-US',translate:'en'},
+    vi:{label:'ベトナム語 (Vietnamese)',speech:'vi-VN',translate:'vi'},
+    ne:{label:'ネパール語 (Nepali)',speech:'ne-NP',translate:'ne'},
+    my:{label:'ミャンマー語 (Burmese)',speech:'my-MM',translate:'my'},
+    id:{label:'インドネシア語 (Indonesian)',speech:'id-ID',translate:'id'},
+    tl:{label:'タガログ語 (Tagalog)',speech:'fil-PH',translate:'tl'},
+    ko:{label:'韓国語',speech:'ko-KR',translate:'ko'},
+    zh:{label:'中国語',speech:'zh-CN',translate:'zh-CN'}
+  };
+
+  function defaultResidents(){
+    return [
+      {id:'R001',name:'テスト太郎',carekarteCode:'CK_R001',note:'定期巡回'},
+      {id:'R002',name:'ダミー花子',carekarteCode:'CK_R002',note:'看護小規模'},
+      {id:'R003',name:'確認一郎',carekarteCode:'CK_R003',note:'訪問'}
+    ];
+  }
+  function defaultStaff(){
+    return [
+      {id:'S001',name:'田中 花子',carekarteCode:'CK_S001',lang:'ja'},
+      {id:'S002',name:'Nguyen An',carekarteCode:'CK_S002',lang:'vi'},
+      {id:'S003',name:'Aung Min',carekarteCode:'CK_S003',lang:'my'}
+    ];
+  }
+
+  function loadState(){
+    try{
+      const raw=localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        const state=JSON.parse(raw);
+        residents=Array.isArray(state.residents)?state.residents:defaultResidents();
+        staffMembers=Array.isArray(state.staffMembers)?state.staffMembers:defaultStaff();
+        approvedDb=Array.isArray(state.approvedDb)?state.approvedDb:[];
+        deviceMode=state.deviceMode||'auto';
+        document.getElementById('translation-endpoint').value=state.translationEndpoint||'';
+        document.getElementById('speech-endpoint').value=state.speechEndpoint||'';
+        document.getElementById('proofread-endpoint').value=state.proofreadEndpoint||'';
+      }else{
+        residents=defaultResidents();staffMembers=defaultStaff();approvedDb=[];deviceMode='auto';
+      }
+    }catch(e){
+      residents=defaultResidents();staffMembers=defaultStaff();approvedDb=[];deviceMode='auto';
+    }
+    document.getElementById('device-mode').value=deviceMode;
+  }
+
+  function saveState(){
+    const state={residents,staffMembers,approvedDb,deviceMode,translationEndpoint:document.getElementById('translation-endpoint')?.value||'',speechEndpoint:document.getElementById('speech-endpoint')?.value||'',proofreadEndpoint:document.getElementById('proofread-endpoint')?.value||''};
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+    updateMetrics();
+  }
+
+  function init(){
+    loadState();
+    renderLanguageOptions();
+    renderSelectors();
+    renderMasterLists();
+    renderDashboard();
+    setDefaultDateTime();
+    initSpeechRecognition();
+    applyDeviceMode(true);
+    updateMicNotice();
+    window.addEventListener('resize',()=>{ if(deviceMode==='auto') applyDeviceMode(false); });
+  }
+
+  function renderLanguageOptions(){
+    const selects=[document.getElementById('staff-lang'),document.getElementById('new-staff-lang')];
+    selects.forEach(sel=>{
+      if(!sel)return;
+      sel.innerHTML='';
+      Object.entries(LANGUAGES).forEach(([code,info])=>{
+        const opt=document.createElement('option');opt.value=code;opt.textContent=info.label;sel.appendChild(opt);
+      });
+    });
+    document.getElementById('new-staff-lang').value='ja';
+  }
+
+  function renderSelectors(){
+    const residentSelect=document.getElementById('resident-select');
+    const staffSelect=document.getElementById('staff-select');
+    const oldResident=residentSelect.value;
+    const oldStaff=staffSelect.value;
+    residentSelect.innerHTML='<option value="">-- 利用者を選択 --</option>';
+    residents.forEach(r=>{
+      const opt=document.createElement('option');opt.value=r.id;opt.textContent=`${r.name} 様（${r.id}）`;residentSelect.appendChild(opt);
+    });
+    staffSelect.innerHTML='<option value="">-- 記録者を選択 --</option>';
+    staffMembers.forEach(s=>{
+      const opt=document.createElement('option');opt.value=s.id;opt.textContent=`${s.name}（${s.id}）`;staffSelect.appendChild(opt);
+    });
+    if(residents.some(r=>r.id===oldResident))residentSelect.value=oldResident;
+    if(staffMembers.some(s=>s.id===oldStaff))staffSelect.value=oldStaff;
+    if(!staffSelect.value && staffMembers[0])staffSelect.value=staffMembers[0].id;
+    onStaffChange();
+  }
+
+  function renderMasterLists(){
+    const residentList=document.getElementById('resident-list');
+    const staffList=document.getElementById('staff-list');
+    residentList.innerHTML=residents.map(r=>`
+      <div class="settingItem">
+        <div class="row between"><b>${escapeHtml(r.name)} 様</b><span class="pill gray">${escapeHtml(r.id)}</span></div>
+        <div class="small muted">CAREKARTEコード：${escapeHtml(r.carekarteCode||'未設定')} ／ ${escapeHtml(r.note||'')}</div>
+        <div class="row right mt"><button class="btn danger small" onclick="deleteResident('${escapeAttr(r.id)}')">削除</button></div>
+      </div>`).join('')||'<p class="small muted">利用者が未登録です。</p>';
+    staffList.innerHTML=staffMembers.map(s=>`
+      <div class="settingItem">
+        <div class="row between"><b>${escapeHtml(s.name)}</b><span class="pill gray">${escapeHtml(s.id)}</span></div>
+        <div class="small muted">CAREKARTEコード：${escapeHtml(s.carekarteCode||'未設定')} ／ 入力言語：${escapeHtml(LANGUAGES[s.lang]?.label||s.lang)}</div>
+        <div class="row right mt"><button class="btn danger small" onclick="deleteStaff('${escapeAttr(s.id)}')">削除</button></div>
+      </div>`).join('')||'<p class="small muted">記録者が未登録です。</p>';
+    updateMetrics();
+  }
+
+  function onResidentChange(){ triggerMaskingNotice(); }
+  function onStaffChange(){
+    const staff=getSelectedStaff();
+    if(staff){document.getElementById('staff-lang').value=staff.lang||'ja';}
+    onLanguageChange();
+  }
+  function onLanguageChange(){
+    const lang=document.getElementById('staff-lang').value||'ja';
+    if(recognition && LANGUAGES[lang]) recognition.lang=LANGUAGES[lang].speech;
+    updateMicNotice();
+    queueSourceAutoTranslate();
+  }
+
+  function getSelectedResident(){return residents.find(r=>r.id===document.getElementById('resident-select').value)||null;}
+  function getSelectedStaff(){return staffMembers.find(s=>s.id===document.getElementById('staff-select').value)||null;}
+
+  function addResident(quick=false){
+    const idEl=document.getElementById(quick?'quick-resident-id':'new-resident-id');
+    const nameEl=document.getElementById(quick?'quick-resident-name':'new-resident-name');
+    const id=idEl.value.trim();const name=nameEl.value.trim();
+    if(!id||!name)return alert('利用者IDと利用者名を入力してください。');
+    if(residents.some(r=>r.id===id))return alert('同じ利用者IDが既に登録されています。');
+    const item={id,name,carekarteCode:quick?'':document.getElementById('new-resident-carekarte').value.trim(),note:quick?'':document.getElementById('new-resident-note').value.trim()};
+    residents.push(item);idEl.value='';nameEl.value='';
+    if(!quick){document.getElementById('new-resident-carekarte').value='';document.getElementById('new-resident-note').value='';}
+    renderSelectors();renderMasterLists();saveState();document.getElementById('resident-select').value=id;showToast('利用者を追加しました。');
+  }
+  function addStaff(quick=false){
+    const idEl=document.getElementById(quick?'quick-staff-id':'new-staff-id');
+    const nameEl=document.getElementById(quick?'quick-staff-name':'new-staff-name');
+    const id=idEl.value.trim();const name=nameEl.value.trim();
+    if(!id||!name)return alert('職員IDと職員名を入力してください。');
+    if(staffMembers.some(s=>s.id===id))return alert('同じ職員IDが既に登録されています。');
+    const item={id,name,carekarteCode:quick?'':document.getElementById('new-staff-carekarte').value.trim(),lang:quick?'ja':document.getElementById('new-staff-lang').value};
+    staffMembers.push(item);idEl.value='';nameEl.value='';
+    if(!quick){document.getElementById('new-staff-carekarte').value='';document.getElementById('new-staff-lang').value='ja';}
+    renderSelectors();renderMasterLists();saveState();document.getElementById('staff-select').value=id;onStaffChange();showToast('記録者を追加しました。');
+  }
+  function deleteResident(id){
+    if(!confirm('この利用者を削除しますか？承認済み記録は残ります。'))return;
+    residents=residents.filter(r=>r.id!==id);renderSelectors();renderMasterLists();saveState();
+  }
+  function deleteStaff(id){
+    if(!confirm('この記録者を削除しますか？承認済み記録は残ります。'))return;
+    staffMembers=staffMembers.filter(s=>s.id!==id);renderSelectors();renderMasterLists();saveState();
+  }
+  function resetMasterData(){
+    if(!confirm('利用者・記録者マスタを初期状態に戻しますか？承認済み記録は残します。'))return;
+    residents=defaultResidents();staffMembers=defaultStaff();renderSelectors();renderMasterLists();saveState();showToast('初期マスタへ戻しました。');
+  }
+  function openQuickAddDialog(){document.getElementById('quick-add-modal').showModal();}
+
+  function setDeviceMode(mode){deviceMode=mode;saveState();applyDeviceMode(false);}
+  function isMobileDevice(){return window.innerWidth<=820||/iPhone|iPad|Android|Mobile/i.test(navigator.userAgent);}
+  function applyDeviceMode(initial=false){
+    const effective=deviceMode==='auto'?(isMobileDevice()?'mobile':'pc'):deviceMode;
+    document.body.dataset.device=effective;
+    document.getElementById('device-badge').textContent=effective==='mobile'?'📱 スマホ画面':'💻 PC画面';
+    if(initial){switchTab(effective==='mobile'?'input':'dashboard');}
+  }
+  function switchTab(tabId){
+    document.querySelectorAll('.section').forEach(el=>el.classList.remove('active'));
+    document.querySelectorAll('.navBtn').forEach(el=>el.classList.remove('active'));
+    document.getElementById(`sec-${tabId}`).classList.add('active');
+    document.getElementById(`tab-${tabId}`).classList.add('active');
+  }
+
+  function setDefaultDateTime(){
+    const input=document.getElementById('record-datetime');
+    const now=new Date();
+    const local=new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,16);
+    input.value=local;
+  }
+
+  function initSpeechRecognition(){
+    if('webkitSpeechRecognition' in window || 'SpeechRecognition' in window){
+      const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+      recognition=new SpeechRecognition();recognition.continuous=true;recognition.interimResults=false;recognition.lang=LANGUAGES[document.getElementById('staff-lang').value||'ja'].speech;
+      recognition.onresult=(event)=>{const text=event.results[event.resultIndex][0].transcript.trim();handleTranscript(text);};
+      recognition.onerror=(e)=>{showToast('マイクエラー: '+e.error);stopMic();};
+      recognition.onend=()=>{if(isRecording){isRecording=false;document.getElementById('mic-btn').classList.remove('recording');document.getElementById('mic-text').textContent='マイクが停止しました（再タップ）';showToast('無音またはブラウザ制限によりマイクが停止しました。');}};
+    }
+  }
+  function updateMicNotice(){
+    const lang=document.getElementById('staff-lang')?.value||'ja';
+    const notice=document.getElementById('mic-support-notice');
+    if(!notice)return;
+    const supports=!!recognition;
+    const speech=LANGUAGES[lang]?.speech||'ja-JP';
+    notice.innerHTML=supports?`現在のブラウザ音声認識言語：<b>${speech}</b>。英語等で話した場合は、原文を取得後に日本語欄へ自動変換します。スマホで動かない場合は「スマホ録音で入力」を使用してください。`:'このブラウザはWeb Speech APIに対応していない可能性があります。「スマホ録音で入力」またはGoogle Cloud Speech-to-Text連携を使用してください。';
+  }
+  async function handleTranscript(transcript){
+    const sourceArea=document.getElementById('source-text');
+    sourceArea.value=(sourceArea.value+' '+transcript).trim();
+    await syncSourceToJapanese(false);
+  }
+
+  function queueSourceAutoTranslate(){
+    const auto=document.getElementById('auto-translate-source');
+    if(auto && !auto.checked) return;
+    clearTimeout(autoTranslateTimer);
+    autoTranslateTimer=setTimeout(()=>syncSourceToJapanese(false),650);
+  }
+
+  async function syncSourceToJapanese(showDoneToast=false){
+    const sourceArea=document.getElementById('source-text');
+    const jpArea=document.getElementById('raw-text');
+    const status=document.getElementById('auto-translate-status');
+    if(!sourceArea || !jpArea) return;
+    const source=sourceArea.value.trim();
+    const lang=document.getElementById('staff-lang')?.value||'ja';
+    const resident=getSelectedResident();
+    if(!source){
+      if(status){status.className='notice blue small mt';status.textContent='原文欄に入力・音声認識された内容は、入力言語に応じて下の日本語欄へ自動反映します。';}
+      return;
+    }
+    if(autoTranslateInProgress) return;
+    if(source===lastAutoTranslatedSource && jpArea.value.trim()) return;
+    autoTranslateInProgress=true;
+    if(status){status.className='notice blue small mt';status.textContent='日本語変換中です...';}
+    try{
+      const japanese=await translateToJapaneseIfNeeded(source,lang,resident);
+      jpArea.value=japanese.trim();
+      lastAutoTranslatedSource=source;
+      triggerMaskingNotice();
+      if(status){status.className='notice blue small mt';status.textContent=lang==='ja'?'日本語入力のため、原文を日本語欄へそのまま反映しました。':'原文を日本語へ変換し、日本語変換後テキスト欄へ反映しました。';}
+      if(showDoneToast)showToast('🌐 原文を日本語変換後テキストへ反映しました。');
+    }catch(e){
+      jpArea.value=source+'（日本語変換に失敗：要確認）';
+      if(status){status.className='notice danger small mt';status.textContent='日本語変換に失敗しました。翻訳API設定または入力言語を確認してください。';}
+      if(showDoneToast)showToast('日本語変換に失敗しました。');
+    }finally{
+      autoTranslateInProgress=false;
+    }
+  }
+
+  function diagnoseVoiceInput(){
+    const items=[];
+    items.push('URL: '+location.href);
+    items.push('安全な接続(HTTPS/localhost): '+(window.isSecureContext?'OK':'NG'));
+    items.push('SpeechRecognition: '+(('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)?'対応':'非対応'));
+    items.push('MediaRecorder: '+(('MediaRecorder' in window)?'対応':'非対応'));
+    items.push('getUserMedia: '+((navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)?'対応':'非対応'));
+    items.push('選択中の音声認識言語: '+(LANGUAGES[document.getElementById('staff-lang').value||'ja']?.speech||'ja-JP'));
+    items.push('翻訳API: '+(document.getElementById('translation-endpoint').value.trim()||'未設定'));
+    items.push('音声認識API: '+(document.getElementById('speech-endpoint').value.trim()||'未設定'));
+    items.push('AI校正API: '+(document.getElementById('proofread-endpoint').value.trim()||'未設定'));
+    alert(items.join('\n'));
+  }
+
+  function toggleMic(){
+    if(!recognition)return showToast('ブラウザ音声入力は非対応です。「スマホ録音で入力」をお試しください。');
+    const btn=document.getElementById('mic-btn');const txt=document.getElementById('mic-text');
+    if(isRecording){stopMic();return;}
+    try{recognition.lang=LANGUAGES[document.getElementById('staff-lang').value||'ja'].speech;recognition.start();isRecording=true;btn.classList.add('recording');txt.textContent='録音中...（タップで停止）';}
+    catch(e){showToast('マイクの起動に失敗しました。時間を置いて再度お試しください。');}
+  }
+  function stopMic(){if(recognition&&isRecording)recognition.stop();isRecording=false;document.getElementById('mic-btn').classList.remove('recording');document.getElementById('mic-text').textContent='マイクで入力開始';}
+
+  async function toggleSmartRecording(){
+    if(isSmartRecording){ stopSmartRecording(); return; }
+    await startSmartRecording();
+  }
+
+  async function startSmartRecording(){
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      return alert('このブラウザでは録音機能を利用できません。Safari/Chromeの通常ブラウザでHTTPS配信されたURLを開いてください。');
+    }
+    if(!window.isSecureContext){
+      return alert('スマホ録音にはHTTPS配信またはlocalhostが必要です。file://やhttp://ではマイク許可が出ない場合があります。');
+    }
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      audioChunks=[];
+      mediaRecorder=new MediaRecorder(stream);
+      mediaRecorder.ondataavailable=(event)=>{ if(event.data && event.data.size>0) audioChunks.push(event.data); };
+      mediaRecorder.onstop=async()=>{
+        stream.getTracks().forEach(track=>track.stop());
+        const blob=new Blob(audioChunks,{type:mediaRecorder.mimeType||'audio/webm'});
+        await transcribeAudioBlob(blob);
+      };
+      mediaRecorder.start();
+      isSmartRecording=true;
+      const btn=document.getElementById('smart-rec-btn');btn.classList.add('recording');btn.textContent='⏹ 録音停止して日本語化';
+      showToast('録音を開始しました。話し終えたら停止してください。');
+    }catch(e){
+      alert('録音開始に失敗しました。マイク権限、HTTPS、通常ブラウザでの起動を確認してください。詳細: '+e.message);
+    }
+  }
+
+  function stopSmartRecording(){
+    if(mediaRecorder && isSmartRecording){ mediaRecorder.stop(); }
+    isSmartRecording=false;
+    const btn=document.getElementById('smart-rec-btn');btn.classList.remove('recording');btn.textContent='📱 スマホ録音で入力';
+  }
+
+  async function transcribeAudioBlob(blob){
+    const endpoint=document.getElementById('speech-endpoint').value.trim();
+    const lang=document.getElementById('staff-lang').value||'ja';
+    if(!endpoint){
+      alert('音声認識APIエンドポイントが未設定です。スマホ録音方式では /api/transcribe-to-ja などの法人管理バックエンドが必要です。');
+      return;
+    }
+    try{
+      showToast('音声を送信して日本語化しています。');
+      const fd=new FormData();
+      fd.append('audio',blob,'voice-recording.webm');
+      fd.append('sourceLanguage',LANGUAGES[lang]?.translate||lang);
+      fd.append('speechLanguage',LANGUAGES[lang]?.speech||'ja-JP');
+      fd.append('targetLanguage','ja');
+      const res=await fetch(endpoint,{method:'POST',body:fd});
+      if(!res.ok)throw new Error('音声認識APIが応答しませんでした');
+      const data=await res.json();
+      const transcript=String(data.transcript||data.sourceText||'').trim();
+      const japanese=String(data.japaneseText||data.translatedText||data.text||'').trim();
+      if(transcript) document.getElementById('source-text').value=(document.getElementById('source-text').value+' '+transcript).trim();
+      if(japanese) document.getElementById('raw-text').value=(document.getElementById('raw-text').value+' '+japanese).trim();
+      triggerMaskingNotice();
+    }catch(e){
+      alert('音声認識・翻訳に失敗しました：'+e.message);
+    }
+  }
+
+  function triggerMaskingNotice(){
+    const text=document.getElementById('raw-text').value;const resident=getSelectedResident();
+    document.getElementById('masking-notice').style.display=(text.length>2&&resident)?'block':'none';
+  }
+  document.addEventListener('input',(e)=>{
+    if(!e.target) return;
+    if(e.target.id==='raw-text')triggerMaskingNotice();
+    if(e.target.id==='source-text')queueSourceAutoTranslate();
+  });
+  document.addEventListener('change',(e)=>{
+    if(e.target && e.target.id==='auto-translate-source' && e.target.checked)queueSourceAutoTranslate();
+  });
+
+  async function processAI(){
+    const rawText=document.getElementById('raw-text').value.trim();const resident=getSelectedResident();const staff=getSelectedStaff();const lang=document.getElementById('staff-lang').value||'ja';
+    if(!resident)return alert('対象利用者を選択してください。');
+    if(!staff)return alert('記録者を選択してください。');
+    if(!document.getElementById('service-type').value)return alert('サービス種別を選択してください。');
+    if(!rawText)return alert('音声テキストが空です。');
+    const btn=document.getElementById('ai-submit-btn');btn.disabled=true;btn.textContent='⏳ 変換中...';
+    try{
+      const japaneseText=await translateToJapaneseIfNeeded(rawText,lang,resident);
+      pendingRecords=generateMockAIResponse(japaneseText,resident,staff);
+      const fullJapaneseSummary=pendingRecords.map(r=>r.text).join('\n');
+      pendingSummaryMasked=maskResidentName(fullJapaneseSummary,resident);
+      pendingTargetLanguage=LANGUAGES[lang]?.translate||'ja';
+      document.getElementById('lang-label').textContent=LANGUAGES[lang]?.label||lang;
+      document.getElementById('translated-preview').classList.add('hidden');
+      document.getElementById('translated-preview').textContent='';
+      const translateBtn=document.getElementById('google-translate-intent-btn');
+      translateBtn.onclick=()=>{const url=`https://translate.google.com/?sl=ja&tl=${pendingTargetLanguage}&text=${encodeURIComponent(pendingSummaryMasked)}`;window.open(url,'_blank','noopener,noreferrer');};
+      renderModal(pendingRecords);document.getElementById('ai-modal').showModal();
+    }catch(e){alert('変換中にエラーが発生しました：'+e.message);}
+    finally{btn.disabled=false;btn.textContent='✨ AIで構造化・翻訳する';}
+  }
+
+  async function translateToJapaneseIfNeeded(text,lang,resident){
+    if(lang==='ja')return text;
+    const endpoint=document.getElementById('translation-endpoint').value.trim();
+    if(!endpoint)return pseudoTranslateToJapanese(text,lang);
+    const masked=maskResidentName(text,resident);
+    const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:masked,sourceLanguage:LANGUAGES[lang]?.translate||lang,targetLanguage:'ja'})});
+    if(!res.ok)throw new Error('翻訳APIが応答しませんでした');
+    const data=await res.json();
+    const translated=String(data.translatedText||data.text||masked);
+    return resident ? translated.replace(/利用者A/g,resident.name) : translated;
+  }
+  function pseudoTranslateToJapanese(text,lang){
+    const lower=text.toLowerCase();
+    if(lang==='en'){
+      let jp='';
+      const amount=(lower.match(/(\d{2,4})\s*(ml|milliliter|milliliters)?/)||[])[1];
+      if(lower.includes('breakfast')||lower.includes('meal')||lower.includes('ate')||lower.includes('food'))jp+='食事を摂取されました。';
+      if(lower.includes('tea')||lower.includes('water')||lower.includes('drink'))jp+=amount?` 水分を約${amount}ml摂取されました。`:' 水分を摂取されました（量は要確認）。';
+      if(lower.includes('medicine')||lower.includes('medication')||lower.includes('drug'))jp+=' 服薬確認を実施しました。';
+      if(lower.includes('toilet')||lower.includes('bathroom')||lower.includes('urine')||lower.includes('bowel'))jp+=' トイレ誘導および排泄対応を実施しました。';
+      if(lower.includes('unsteady')||lower.includes('dizzy')||lower.includes('fall')||lower.includes('wobbly'))jp+=' 移動時にふらつきが見られたため、見守りを強化しました。';
+      return jp||text+'（日本語変換要確認）';
+    }
+    return text+'（多言語入力：バックグラウンドGoogle翻訳API未設定のため、原文を基に要確認）';
+  }
+  function maskResidentName(text,resident){
+    if(!resident)return text;
+    const escaped=escapeRegExp(resident.name);const family=escapeRegExp(resident.name.substring(0,2));
+    const regex=new RegExp(`${escaped}|${family}(さん|様)?`,'g');
+    return text.replace(regex,'利用者A');
+  }
+  async function translateSummaryInBackground(){
+    const endpoint=document.getElementById('translation-endpoint').value.trim();
+    const preview=document.getElementById('translated-preview');
+    if(pendingTargetLanguage==='ja'){preview.textContent='入力言語が日本語のため翻訳は不要です。';preview.classList.remove('hidden');return;}
+    if(!endpoint){preview.textContent='翻訳APIエンドポイントが未設定です。右側の「Google翻訳を開く」を使用するか、/api/translate-to-ja 等の法人管理バックエンドを設定してください。';preview.classList.remove('hidden');return;}
+    preview.textContent='翻訳中...';preview.classList.remove('hidden');
+    try{
+      const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:pendingSummaryMasked,sourceLanguage:'ja',targetLanguage:pendingTargetLanguage})});
+      if(!res.ok)throw new Error('翻訳APIが応答しませんでした');
+      const data=await res.json();preview.textContent=data.translatedText||data.text||'翻訳結果を取得できませんでした。';
+    }catch(e){preview.textContent='翻訳に失敗しました：'+e.message;}
+  }
+
+
+  async function proofreadJapaneseText(){
+    const area=document.getElementById('raw-text');
+    const text=area.value.trim();
+    const resident=getSelectedResident();
+    if(!text)return alert('校正する日本語テキストがありません。');
+    if(!resident)return alert('対象利用者を選択してください。');
+    const btn=document.getElementById('proofread-btn');
+    btn.disabled=true;btn.textContent='⏳ AI校正中...';
+    try{
+      lastProofreadOriginal=area.value;
+      const corrected=await proofreadCareRecordText(text,resident);
+      area.value=corrected;
+      triggerMaskingNotice();
+      document.getElementById('restore-proofread-btn').disabled=false;
+      showProofreadPreview(lastProofreadOriginal,corrected);
+      showToast('📝 介護記録向けに文章を校正しました。必ず内容を確認してください。');
+    }catch(e){
+      alert('AI校正中にエラーが発生しました：'+e.message);
+    }finally{
+      btn.disabled=false;btn.textContent='📝 AIで文章校正';
+    }
+  }
+
+  async function proofreadCareRecordText(text,resident){
+    const endpoint=document.getElementById('proofread-endpoint')?.value.trim()||'';
+    const masked=maskResidentName(text,resident);
+    if(endpoint){
+      const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        text:masked,
+        mode:'care_record_proofread',
+        targetStyle:'客観的・丁寧・簡潔な介護記録文',
+        rules:[
+          '主観的表現を避け、観察事実・実施内容・利用者反応・申し送りに整理する',
+          '利用者の尊厳を損なう表現を避ける',
+          '医療判断や診断に踏み込みすぎない',
+          '不明点や数値不明は要確認として残す',
+          'CAREKARTEへ転記しやすい短文に整える'
+        ]
+      })});
+      if(!res.ok)throw new Error('AI校正APIが応答しませんでした');
+      const data=await res.json();
+      return String(data.correctedText||data.proofreadText||data.text||masked).replace(/利用者A/g,resident.name);
+    }
+    return localProofreadCareRecordText(text,resident);
+  }
+
+  function localProofreadCareRecordText(text,resident){
+    let t=String(text||'').trim();
+    t=t.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+    t=t.replace(/\s+/g,' ');
+    t=t.replace(/，/g,'、').replace(/．/g,'。');
+    t=t.replace(/(してあげた|やってあげた)/g,'実施した');
+    t=t.replace(/元気そう/g,'表情・発語等に大きな変化はみられなかった');
+    t=t.replace(/普通/g,'普段と大きな変化なし（具体的観察は要確認）');
+    t=t.replace(/わがまま/g,'拒否・訴えがみられた（内容要確認）');
+    t=t.replace(/ボケている|認知症だから/g,'認知機能面への配慮が必要');
+    t=t.replace(/ごはん/g,'食事');
+    t=t.replace(/全部食べた|全ぶ食べた|全量食べた/g,'全量摂取された');
+    t=t.replace(/少し飲んだ/g,'少量摂取された（摂取量は要確認）');
+    t=t.replace(/お茶\s*(\d{2,4})\s*(ml|ｍｌ|ミリ)?/gi,'お茶を約$1ml摂取された');
+    t=t.replace(/水\s*(\d{2,4})\s*(ml|ｍｌ|ミリ)?/gi,'水分を約$1ml摂取された');
+    t=t.replace(/薬飲んだ|薬を飲んだ/g,'服薬を確認した');
+    t=t.replace(/トイレ(に)?(一緒に)?行った/g,'声かけ・見守りのもとトイレへ移動された');
+    t=t.replace(/ふらふら|ふらつきあり/g,'移動時にふらつきがみられた');
+    t=t.replace(/危ない/g,'転倒リスクに留意が必要');
+
+    const parts=t.split(/(?<=。)|\n|(?<=！)|(?<=？)/).map(s=>s.trim()).filter(Boolean);
+    const normalized=parts.map(s=>{
+      let line=s;
+      if(!/[。！？]$/.test(line))line+='。';
+      return line;
+    });
+
+    let result=normalized.join('\n');
+    if(!result.includes('要確認') && /(くらい|たぶん|多分|と思う|かも)/.test(text)){
+      result+='\n※一部に曖昧な表現が含まれるため、数値・状態を確認してください。';
+    }
+    return result;
+  }
+
+  function showProofreadPreview(before,after){
+    const box=document.getElementById('proofread-preview');
+    const summary=document.getElementById('proofread-summary');
+    const beforeLen=String(before||'').length;
+    const afterLen=String(after||'').length;
+    const changed=before===after?'大きな変更はありませんでした。':'主観表現・口語表現を介護記録向けに整えました。';
+    summary.innerHTML=`${changed}<br>校正前：${beforeLen}文字 ／ 校正後：${afterLen}文字<br><span class="muted">※校正後も、事実と異なる内容がないか職員確認が必要です。</span>`;
+    box.classList.remove('hidden');
+  }
+
+  function restoreBeforeProofread(){
+    if(!lastProofreadOriginal)return;
+    document.getElementById('raw-text').value=lastProofreadOriginal;
+    document.getElementById('restore-proofread-btn').disabled=true;
+    document.getElementById('proofread-preview').classList.add('hidden');
+    triggerMaskingNotice();
+    showToast('校正前の文章に戻しました。');
+  }
+
+  function generateMockAIResponse(text,resident,staff){
+    const meta={residentId:resident.id,residentName:resident.name,residentCarekarteCode:resident.carekarteCode||'',staffId:staff.id,staffName:staff.name,staffCarekarteCode:staff.carekarteCode||'',serviceType:document.getElementById('service-type').value,visitType:document.getElementById('visit-type').value,recordDateTime:document.getElementById('record-datetime').value||new Date().toISOString().slice(0,16),officeId:'OFFICE_ARATO'};
+    const records=[];
+    const push=(category,value,body,confidence)=>records.push({id:'REC_'+Date.now()+'_'+records.length,category,value,text:body,confidence,...meta,exported:false,sourceText:document.getElementById('raw-text').value.trim(),sourceLanguage:document.getElementById('staff-lang').value});
+    if(/ごはん|食べ|朝食|昼食|夕食|食事/.test(text))push('食事','100%',`${resident.name}様の食事は全量摂取されました。`,.95);
+    if(/お茶|飲|水分|ml|ミリ|water|tea/.test(text)){
+      const match=text.match(/(\d{2,4})\s*(ml|ｍｌ|ミリ)?/i);const amount=match?match[1]:'要確認';
+      push('水分',amount==='要確認'?'要確認':`${amount}ml`,`${resident.name}様、水分は${amount==='要確認'?'摂取量不明のため要確認':`約${amount}ml`}摂取されました。`,match ? .86 : .35);
+    }
+    if(/トイレ|排泄|便|尿/.test(text))push('排泄','トイレ誘導','声かけによりトイレへ誘導し、排泄対応を実施しました。',.9);
+    if(/服薬|薬|内服/.test(text))push('服薬','実施','服薬確認を実施しました。',.88);
+    if(/入浴|清拭|更衣/.test(text))push('清潔','実施','清潔保持に関する支援を実施しました。',.82);
+    if(/ふらつ|ふらふら|危な|転倒|dizzy|unsteady/.test(text))push('特記事項・申し送り','見守り強化','移動時にふらつきが見られたため、転倒リスクに留意し見守りを強化しました。',.86);
+    if(records.length===0)push('特記事項','要確認',text+'（客観的記録への整形内容を確認してください）',.55);
+    return records;
+  }
+
+  function renderModal(records){
+    const container=document.getElementById('ai-structured-results');container.innerHTML='';
+    records.forEach((rec,index)=>{
+      const isWarning=rec.confidence<.5;
+      const html=`
+        <div class="recordCard ${isWarning?'notice warn':''}" style="${isWarning?'border:2px solid var(--warn);':''}">
+          <div class="row between"><span class="pill ${isWarning?'warn':'gray'}">${escapeHtml(rec.category)}</span><span class="small muted">信頼度 ${Math.round(rec.confidence*100)}%</span></div>
+          <label class="mt">記録本文</label>
+          <textarea id="manual-text-${index}" style="min-height:86px;">${escapeHtml(rec.text)}</textarea>
+          <div class="grid2 mt">
+            <div><label>抽出値</label><input type="text" id="manual-val-${index}" value="${escapeAttr(rec.value)}"></div>
+            <div><label>分類</label><input type="text" id="manual-cat-${index}" value="${escapeAttr(rec.category)}"></div>
+          </div>
+          ${isWarning?'<div class="small muted mt">⚠️ 信頼度が低いため、数値・分類・本文を必ず確認してください。</div>':''}
+        </div>`;
+      container.insertAdjacentHTML('beforeend',html);
+    });
+  }
+
+  function approveRecords(){
+    pendingRecords.forEach((rec,index)=>{
+      rec.value=document.getElementById(`manual-val-${index}`)?.value||rec.value;
+      rec.category=document.getElementById(`manual-cat-${index}`)?.value||rec.category;
+      rec.text=document.getElementById(`manual-text-${index}`)?.value||rec.text;
+      rec.approvedAt=new Date().toISOString();rec.exported=false;approvedDb.push(JSON.parse(JSON.stringify(rec)));
+    });
+    document.getElementById('ai-modal').close();document.getElementById('raw-text').value='';document.getElementById('source-text').value='';document.getElementById('masking-notice').style.display='none';setDefaultDateTime();renderDashboard();saveState();showToast('✅ 記録を承認・保存しました。');
+  }
+
+  function renderDashboard(){
+    const tbody=document.getElementById('data-tbody');tbody.innerHTML='';
+    if(approvedDb.length===0){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;">承認されたデータはありません</td></tr>';updateMetrics();return;}
+    approvedDb.forEach((rec,idx)=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`
+        <td data-label="記録日時" class="nowrap">${escapeHtml(formatDateTime(rec.recordDateTime))}</td>
+        <td data-label="利用者" class="nowrap">${escapeHtml(rec.residentName)}<br><span class="small muted">${escapeHtml(rec.residentId)}</span></td>
+        <td data-label="記録者" class="nowrap">${escapeHtml(rec.staffName)}<br><span class="small muted">${escapeHtml(rec.staffId)}</span></td>
+        <td data-label="サービス">${escapeHtml(rec.serviceType)}<br><span class="small muted">${escapeHtml(rec.visitType)}</span></td>
+        <td data-label="分類"><span class="pill gray">${escapeHtml(rec.category)}</span></td>
+        <td data-label="値">${escapeHtml(rec.value)}</td>
+        <td data-label="記録本文" style="max-width:360px;">${escapeHtml(rec.text)}</td>
+        <td data-label="操作" class="nowrap"><button class="btn blue small" onclick="copyToClipboardByIndex(${idx})">📋 コピー</button></td>`;
+      tbody.appendChild(tr);
+    });
+    updateMetrics();
+  }
+  function copyToClipboardByIndex(idx){copyToClipboard(approvedDb[idx]?.text||'');}
+  function copyToClipboard(text){navigator.clipboard.writeText(text).then(()=>showToast('📋 コピーしました。')).catch(()=>alert('コピーに失敗しました。HTTPSまたはブラウザ設定を確認してください。'));}
+  function exportCSV(){
+    if(approvedDb.length===0)return alert('出力するデータがありません。');
+    const headers=['事業所ID','利用者ID','利用者名','CAREKARTE利用者コード','記録日時','記録者ID','記録者名','CAREKARTE職員コード','サービス種別','訪問区分','記録分類','抽出値','記録本文','確認ステータス','音声入力元テキスト','翻訳元言語','作成日時','更新日時','インポート状態'];
+    let csv=headers.map(csvEscape).join(',')+'\r\n';
+    approvedDb.forEach(rec=>{
+      const row=[rec.officeId,rec.residentId,rec.residentName,rec.residentCarekarteCode,rec.recordDateTime,rec.staffId,rec.staffName,rec.staffCarekarteCode,rec.serviceType,rec.visitType,rec.category,rec.value,rec.text,'承認済',rec.sourceText,rec.sourceLanguage,rec.approvedAt,rec.approvedAt,rec.exported?'出力済':'未出力'];
+      csv+=row.map(csvEscape).join(',')+'\r\n';rec.exported=true;
+    });
+    downloadBlob(new Blob([new Uint8Array([0xEF,0xBB,0xBF]),csv],{type:'text/csv;charset=utf-8;'}),`CAREKARTE_IntermediateData_${Date.now()}.csv`);saveState();renderDashboard();
+  }
+  function exportJSON(){
+    if(approvedDb.length===0)return alert('出力するデータがありません。');
+    approvedDb.forEach(r=>r.exported=true);
+    downloadBlob(new Blob([JSON.stringify({version:'v3',exportedAt:new Date().toISOString(),records:approvedDb},null,2)],{type:'application/json;charset=utf-8;'}),`CAREKARTE_IntermediateData_${Date.now()}.json`);saveState();renderDashboard();
+  }
+  function exportSettings(){downloadBlob(new Blob([JSON.stringify({version:'v3',residents,staffMembers,approvedDb},null,2)],{type:'application/json;charset=utf-8;'}),`CAREKARTE_SystemSettings_${Date.now()}.json`);}
+  function importSettings(event){
+    const file=event.target.files?.[0];if(!file)return;
+    const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);if(Array.isArray(data.residents))residents=data.residents;if(Array.isArray(data.staffMembers))staffMembers=data.staffMembers;if(Array.isArray(data.approvedDb))approvedDb=data.approvedDb;renderSelectors();renderMasterLists();renderDashboard();saveState();showToast('設定JSONを取り込みました。');}catch(e){alert('JSONの読み込みに失敗しました。');}};reader.readAsText(file);event.target.value='';
+  }
+  function clearData(){if(confirm('蓄積された承認済みデータをすべて消去しますか？')){approvedDb=[];renderDashboard();saveState();showToast('データを消去しました。');}}
+  function updateMetrics(){
+    document.getElementById('metric-records').textContent=approvedDb.length;
+    document.getElementById('metric-residents').textContent=residents.length;
+    document.getElementById('metric-staff').textContent=staffMembers.length;
+    document.getElementById('metric-pending-export').textContent=approvedDb.filter(r=>!r.exported).length;
+  }
+
+  function showToast(message){const toast=document.getElementById('toast');toast.textContent=message;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),3000);}
+  function downloadBlob(blob,filename){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}
+  function csvEscape(value){return '"'+String(value??'').replace(/"/g,'""')+'"';}
+  function escapeHtml(str){return String(str??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+  function escapeAttr(str){return escapeHtml(str).replace(/'/g,'&#39;');}
+  function escapeRegExp(str){return String(str).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+  function formatDateTime(value){if(!value)return'';return value.replace('T',' ');}
+
+  window.addEventListener('offline',()=>{const badge=document.getElementById('network-badge');badge.textContent='🔴 オフライン';badge.style.color='var(--danger)';});
+  window.addEventListener('online',()=>{const badge=document.getElementById('network-badge');badge.textContent='🟢 オンライン';badge.style.color='var(--ok)';});
+  document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
